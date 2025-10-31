@@ -1823,6 +1823,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
+name = "learning-project"
+version = "0.1.0"
+dependencies = [
+ "cuda_builder",
+ "cust",
+ "nanorand",
+]
+
+[[package]]
+name = "learning-project-kernels"
+version = "0.1.0"
+dependencies = [
+ "cuda_std",
+]
+
+[[package]]
 name = "lebe"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1951,6 +1967,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata 0.1.10",
+]
+
+[[package]]
+name = "matrix-multiplication"
+version = "0.1.0"
+dependencies = [
+ "cuda_builder",
+ "cust",
+]
+
+[[package]]
+name = "matrix-multiplication-kernels"
+version = "0.1.0"
+dependencies = [
+ "cuda_std",
 ]
 
 [[package]]

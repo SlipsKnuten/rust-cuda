@@ -20,6 +20,10 @@ members = [
   "examples/optix/*",
   "tests/compiletests",
   "tests/compiletests/deps-helper",
+  "learning-project",
+  "learning-project/kernels",
+  "matrix-multiplication",
+  "matrix-multiplication/kernels",
 ]
 
 exclude = [
