@@ -1,4 +1,5 @@
 mod extract_llfns;
+mod ptx_cache;
 
 use pico_args::Arguments;
 use std::{error::Error, path::Path};
@@ -19,6 +20,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             extract_llfns(file, dir);
             Ok(())
         }
-        _ => panic!("Unknown command, available: `extract_llfns`"),
+        "cache" => {
+            let cache_cmd = args.free_from_str::<String>()?;
+            args.finish();
+            match cache_cmd.as_str() {
+                "stats" => ptx_cache::stats()?,
+                "clear" => ptx_cache::clear()?,
+                "enable" => ptx_cache::enable(),
+                "disable" => ptx_cache::disable(),
+                _ => ptx_cache::usage(),
+            }
+            Ok(())
+        }
+        _ => {
+            eprintln!("Unknown command, available commands:");
+            eprintln!("  extract_llfns");
+            eprintln!("  cache [stats|clear|enable|disable]");
+            std::process::exit(1);
+        }
     }
 }

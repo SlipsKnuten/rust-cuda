@@ -6,16 +6,26 @@ use crate::common::AsCCharPtr;
 use crate::context::CodegenArgs;
 use crate::llvm::*;
 use crate::lto::ThinBuffer;
+use crate::ptx_cache::PtxCache;
 use nvvm::*;
 use rustc_codegen_ssa::traits::ThinBufferMethods;
 use rustc_session::{Session, config::DebugInfo};
 use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ptr;
-use tracing::debug;
+use std::sync::LazyLock;
+use tracing::{debug, warn};
 
 // see libintrinsics.ll on what this is.
 const LIBINTRINSICS: &[u8] = include_bytes!("../libintrinsics.bc");
+
+// Global PTX cache instance
+static PTX_CACHE: LazyLock<PtxCache> = LazyLock::new(|| {
+    PtxCache::new().unwrap_or_else(|e| {
+        eprintln!("rust-cuda: PTX cache initialization failed: {}", e);
+        panic!("Failed to initialize PTX cache");
+    })
+});
 
 pub enum CodegenErr {
     Nvvm(NvvmError),
@@ -102,8 +112,42 @@ pub fn codegen_bitcode_modules(
     }
 
     let buf = ThinBuffer::new(module);
+    let bitcode_bytes = buf.data();
 
-    prog.add_module(buf.data(), "merged".to_string())?;
+    // Extract architecture and optimization level for cache key
+    let arch_str = args
+        .nvvm_options
+        .iter()
+        .find_map(|opt| {
+            if let NvvmOption::Arch(arch) = opt {
+                Some(arch.to_string())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| "compute_52".to_string()); // Default arch
+
+    let opt_level = if args.nvvm_options.contains(&NvvmOption::NoOpts) {
+        "0"
+    } else {
+        "3"
+    };
+
+    // Try to get cached PTX
+    if let Some(cached_ptx) = PTX_CACHE.get(bitcode_bytes, &arch_str, opt_level) {
+        debug!(
+            "PTX cache hit - skipping NVVM compilation (arch={}, opt={})",
+            arch_str, opt_level
+        );
+        return Ok(cached_ptx);
+    }
+
+    debug!(
+        "PTX cache miss - running NVVM compilation (arch={}, opt={})",
+        arch_str, opt_level
+    );
+
+    prog.add_module(bitcode_bytes, "merged".to_string())?;
     prog.add_lazy_module(LIBDEVICE_BITCODE, "libdevice".to_string())?;
     prog.add_lazy_module(LIBINTRINSICS, "libintrinsics".to_string())?;
 
@@ -132,6 +176,11 @@ pub fn codegen_bitcode_modules(
             );
         }
     };
+
+    // Cache the compiled PTX
+    if let Err(e) = PTX_CACHE.put(bitcode_bytes, &arch_str, opt_level, &res) {
+        warn!("Failed to cache PTX: {}", e);
+    }
 
     Ok(res)
 }

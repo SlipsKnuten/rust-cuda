@@ -50,6 +50,7 @@ mod lto;
 mod mono_item;
 mod nvvm;
 mod override_fns;
+mod ptx_cache;
 mod ptx_filter;
 mod target;
 mod ty;
