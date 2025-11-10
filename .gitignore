@@ -2,3 +2,7 @@ book
 /target
 **/.vscode
 .devcontainer
+.claude/
+learning_project/
+matrix-multiplication/
+CLAUDE.md

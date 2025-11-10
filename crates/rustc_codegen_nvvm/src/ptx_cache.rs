@@ -281,8 +281,10 @@ mod tests {
 
     fn temp_cache() -> io::Result<PtxCache> {
         let temp_dir = env::temp_dir().join(format!("rust-cuda-test-{}", std::process::id()));
-        env::set_var("RUST_CUDA_PTX_CACHE", &temp_dir);
-        env::remove_var("RUST_CUDA_PTX_CACHE_DISABLE");
+        unsafe {
+            env::set_var("RUST_CUDA_PTX_CACHE", &temp_dir);
+            env::remove_var("RUST_CUDA_PTX_CACHE_DISABLE");
+        }
 
         let cache = PtxCache::new()?;
 
@@ -366,7 +368,9 @@ mod tests {
 
     #[test]
     fn test_cache_disable() -> io::Result<()> {
-        env::set_var("RUST_CUDA_PTX_CACHE_DISABLE", "1");
+        unsafe {
+            env::set_var("RUST_CUDA_PTX_CACHE_DISABLE", "1");
+        }
 
         let cache = PtxCache::new()?;
         assert!(!cache.is_enabled());
@@ -382,7 +386,9 @@ mod tests {
         // Get should always miss
         assert!(cache.get(bitcode, arch, opt_level).is_none());
 
-        env::remove_var("RUST_CUDA_PTX_CACHE_DISABLE");
+        unsafe {
+            env::remove_var("RUST_CUDA_PTX_CACHE_DISABLE");
+        }
         Ok(())
     }
 
